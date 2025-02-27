@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AppUser {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  email String @unique @db.VarChar(50)
+  username String @unique @db.VarChar(50)
+  password String @db.VarChar(255)
+  friends  AppUser[] @relation("Friendship")
+  friendOf AppUser[] @relation("Friendship")
+  requestsSent RequestFriend[] @relation("requester")
+  requestsReceive RequestFriend[] @relation("requested")
+  profile UserProfile?
+  products Product[]
+}
+
+model RequestFriend {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  requesterId String
+  requester AppUser @relation("requester", fields: [requesterId], references: [id])
+  requestedId String
+  requested AppUser @relation("requested", fields: [requestedId], references: [id])
+
+  status RequestStatus @default(PENDING)
+  
+  @@unique([requesterId, requestedId])
+}
+
+model UserProfile {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())  
+  fullname String? 
+  bio String? @db.Text()
+  imageProfile String?
+  dob DateTime?
+  user AppUser @relation(fields: [userId], references: [id])
+  userId String @unique
+}
+
+model Product {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  name String
+  items Item[] 
+  user AppUser @relation(fields: [userId], references: [id])
+  userId String 
+}
+
+model Item {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  name String
+  description String
+  info String
+  price BigInt
+  stock Int
+  thumbnail String?      
+  product Product @relation(fields: [productId], references: [id])
+  productId String 
+  imageItems ImageItem[]
+}
+
+model ImageItem {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  imageUrl String
+  name String?
+  description String?
+  item Item @relation(fields : [itemId], references: [id])
+  itemId String
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
